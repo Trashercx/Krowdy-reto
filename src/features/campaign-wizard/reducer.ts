@@ -1,5 +1,6 @@
 import type { WizardState, Channel, TemplateId } from "./types";
 import { CHANNEL_ORDER } from "./types";
+import { TEMPLATES } from "./templates";
 
 export type WizardAction =
   | { type: "SET_TEMPLATE"; payload: TemplateId }
@@ -10,7 +11,8 @@ export type WizardAction =
   | { type: "UPDATE_EMAIL_MESSAGE"; payload: string }
   | { type: "NEXT_STEP" }
   | { type: "PREV_STEP" }
-  | { type: "SUBMIT" };
+  | { type: "SUBMIT" }
+  | { type: "APPLY_TEMPLATE_DEFAULTS" };
 
 export const initialState: WizardState = {
   stepIndex: 0,
@@ -31,11 +33,20 @@ export function wizardReducer(
   action: WizardAction
 ): WizardState {
   switch (action.type) {
-    case "SET_TEMPLATE":
-      return {
-        ...state,
-        template: action.payload,
-      };
+    case "SET_TEMPLATE":{
+        const t = action.payload;
+        const tpl = TEMPLATES[t];
+        return {
+            ...state,
+            template: t,
+            sms: { message: state.sms.message || tpl.sms },
+            whatsapp: { message: state.whatsapp.message || tpl.whatsapp },
+            email: {
+                subject: state.email.subject || tpl.email.subject,
+                message: state.email.message || tpl.email.message,
+            },
+        };
+    }
 
     case "TOGGLE_CHANNEL": {
       const exists = state.channels.includes(action.payload);
@@ -91,6 +102,10 @@ export function wizardReducer(
         ...state,
         submitted: true,
       };
+    
+    case "APPLY_TEMPLATE_DEFAULTS":{
+        return state;
+    }
 
     default:
       return state;

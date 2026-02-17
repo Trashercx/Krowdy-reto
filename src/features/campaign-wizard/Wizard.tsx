@@ -4,6 +4,8 @@ import { initialState, wizardReducer } from "./reducer";
 import StepTemplate from "./steps/StepTemplate";
 import StepChannels from "./steps/StepChannels";
 import StepSms from "./steps/StepSms";
+import StepEmail from "./steps/StepEmail";
+import StepWhatsapp from "./steps/StepWhatsapp";
 
 export default function Wizard() {
   const [state, dispatch] = useReducer(wizardReducer, initialState);
@@ -74,7 +76,21 @@ export default function Wizard() {
                 onChange={(v) => dispatch({ type: "UPDATE_SMS", payload: v })}
             />
         )}
-
+        
+        {dynamicSteps[state.stepIndex] === "Correo electrónico" && (
+            <StepEmail
+                subject={state.email.subject}
+                message={state.email.message}
+                onChangeSubject={(v) => dispatch({ type: "UPDATE_EMAIL_SUBJECT", payload: v })}
+                onChangeMessage={(v) => dispatch({ type: "UPDATE_EMAIL_MESSAGE", payload: v })}
+            />
+        )}
+        {dynamicSteps[state.stepIndex] === "Whatsapp" && (
+            <StepWhatsapp
+                value={state.whatsapp.message}
+                onChange={(v) => dispatch({ type: "UPDATE_WHATSAPP", payload: v })}
+            />
+        )}
 
         <Box sx={{ display: "flex", justifyContent: "space-between", mt: 3 }}>
           <Button
