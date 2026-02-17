@@ -1,50 +1,64 @@
-import { useMemo, useReducer } from "react";
-import { Box, Button, Paper, Step, StepLabel, Stepper } from "@mui/material";
+import { useMemo, useReducer, useCallback } from "react";
+import { Box, Button, Paper, Step, StepLabel, Stepper, Typography } from "@mui/material";
 import { initialState, wizardReducer } from "./reducer";
 import StepTemplate from "./steps/StepTemplate";
 import StepChannels from "./steps/StepChannels";
 import StepSms from "./steps/StepSms";
 import StepEmail from "./steps/StepEmail";
 import StepWhatsapp from "./steps/StepWhatsapp";
+import StepReview from "./steps/StepReview";
 
 export default function Wizard() {
   const [state, dispatch] = useReducer(wizardReducer, initialState);
 
   const dynamicSteps = useMemo(() => {
-  const baseSteps = ["Plantilla", "Canales"];
+    const baseSteps = ["Plantilla", "Canales"] as const;
 
-  const channelSteps = state.channels.map((c) => {
-    if (c === "sms") return "Sms";
-    if (c === "email") return "Correo electrónico";
-    if (c === "whatsapp") return "Whatsapp";
-    return "";
-  });
+    const channelSteps = state.channels.map((c) => {
+      if (c === "sms") return "Sms";
+      if (c === "email") return "Correo electrónico";
+      if (c === "whatsapp") return "Whatsapp";
+      return "";
+    });
 
-  return [...baseSteps, ...channelSteps, "Resumen"];
-}, [state.channels]);
+    return [...baseSteps, ...channelSteps, "Resumen"];
+  }, [state.channels]);
+
+  const currentStep = dynamicSteps[state.stepIndex];
 
   const canNext = useMemo(() => {
-  const step = dynamicSteps[state.stepIndex];
+    if (currentStep === "Plantilla") return state.template !== null;
+    if (currentStep === "Canales") return state.channels.length > 0;
 
-  if (step === "Plantilla") return state.template !== null;
-  if (step === "Canales") return state.channels.length > 0;
+    if (currentStep === "Sms") return state.sms.message.trim() !== "";
+    if (currentStep === "Correo electrónico")
+      return state.email.subject.trim() !== "" && state.email.message.trim() !== "";
+    if (currentStep === "Whatsapp") return state.whatsapp.message.trim() !== "";
 
-  if (step === "Sms") return state.sms.message.trim() !== "";
-  if (step === "Correo electrónico")
+    return true;
+  }, [currentStep, state]);
+
+  const onBack = useCallback(() => {
+    dispatch({ type: "PREV_STEP" });
+  }, []);
+
+  const onNext = useCallback(() => {
+    if (currentStep === "Resumen") {
+      dispatch({ type: "SUBMIT" });
+      return;
+    }
+    dispatch({ type: "NEXT_STEP" });
+  }, [currentStep]);
+
+  if (state.submitted) {
     return (
-      state.email.subject.trim() !== "" &&
-      state.email.message.trim() !== ""
+      <Box p={4} textAlign="center">
+        <Typography variant="h5" gutterBottom>
+         Campaña creada correctamente
+        </Typography>
+      </Box>
     );
-
-  if (step === "Whatsapp")
-    return state.whatsapp.message.trim() !== "";
-
-  return true;
-}, [state, dynamicSteps]);
-
-
-  const onNext = () => dispatch({ type: "NEXT_STEP" });
-  const onBack = () => dispatch({ type: "PREV_STEP" });
+  }
 
   return (
     <Box sx={{ p: 3, display: "flex", justifyContent: "center" }}>
@@ -57,56 +71,52 @@ export default function Wizard() {
           ))}
         </Stepper>
 
-        {state.stepIndex === 0 && (
+        {currentStep === "Plantilla" && (
           <StepTemplate
             value={state.template}
             onChange={(v) => dispatch({ type: "SET_TEMPLATE", payload: v })}
           />
         )}
 
-        {state.stepIndex === 1 && (
+        {currentStep === "Canales" && (
           <StepChannels
             selected={state.channels}
             onToggle={(c) => dispatch({ type: "TOGGLE_CHANNEL", payload: c })}
           />
         )}
-        {dynamicSteps[state.stepIndex] === "Sms" && (
-            <StepSms
-                value={state.sms.message}
-                onChange={(v) => dispatch({ type: "UPDATE_SMS", payload: v })}
-            />
-        )}
-        
-        {dynamicSteps[state.stepIndex] === "Correo electrónico" && (
-            <StepEmail
-                subject={state.email.subject}
-                message={state.email.message}
-                onChangeSubject={(v) => dispatch({ type: "UPDATE_EMAIL_SUBJECT", payload: v })}
-                onChangeMessage={(v) => dispatch({ type: "UPDATE_EMAIL_MESSAGE", payload: v })}
-            />
-        )}
-        {dynamicSteps[state.stepIndex] === "Whatsapp" && (
-            <StepWhatsapp
-                value={state.whatsapp.message}
-                onChange={(v) => dispatch({ type: "UPDATE_WHATSAPP", payload: v })}
-            />
+
+        {currentStep === "Sms" && (
+          <StepSms
+            value={state.sms.message}
+            onChange={(v) => dispatch({ type: "UPDATE_SMS", payload: v })}
+          />
         )}
 
+        {currentStep === "Correo electrónico" && (
+          <StepEmail
+            subject={state.email.subject}
+            message={state.email.message}
+            onChangeSubject={(v) => dispatch({ type: "UPDATE_EMAIL_SUBJECT", payload: v })}
+            onChangeMessage={(v) => dispatch({ type: "UPDATE_EMAIL_MESSAGE", payload: v })}
+          />
+        )}
+
+        {currentStep === "Whatsapp" && (
+          <StepWhatsapp
+            value={state.whatsapp.message}
+            onChange={(v) => dispatch({ type: "UPDATE_WHATSAPP", payload: v })}
+          />
+        )}
+
+        {currentStep === "Resumen" && <StepReview state={state} />}
+
         <Box sx={{ display: "flex", justifyContent: "space-between", mt: 3 }}>
-          <Button
-            variant="outlined"
-            disabled={state.stepIndex === 0}
-            onClick={onBack}
-          >
+          <Button variant="outlined" disabled={state.stepIndex === 0} onClick={onBack}>
             Atrás
           </Button>
 
-          <Button
-            variant="contained"
-            disabled={!canNext || state.stepIndex === dynamicSteps.length - 1}
-            onClick={onNext}
-          >
-            Siguiente
+          <Button variant="contained" disabled={!canNext} onClick={onNext}>
+            {currentStep === "Resumen" ? "Finalizar" : "Siguiente"}
           </Button>
         </Box>
       </Paper>
