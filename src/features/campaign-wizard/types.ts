@@ -6,9 +6,7 @@ export const CHANNEL_ORDER: Channel[] = ["sms", "email", "whatsapp"];
 
 export interface WizardState {
   stepIndex: number;
-
   template: TemplateId | null;
-
   channels: Channel[];
 
   sms: {
@@ -24,5 +22,7 @@ export interface WizardState {
     message: string;
   };
 
+  sending: boolean;
   submitted: boolean;
+  error: string | null;
 }

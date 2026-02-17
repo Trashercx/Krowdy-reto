@@ -11,8 +11,10 @@ export type WizardAction =
   | { type: "UPDATE_EMAIL_MESSAGE"; payload: string }
   | { type: "NEXT_STEP" }
   | { type: "PREV_STEP" }
-  | { type: "SUBMIT" }
-  | { type: "APPLY_TEMPLATE_DEFAULTS" };
+  | { type: "SUBMIT_REQUEST" }
+  | { type: "SUBMIT_SUCCESS" }
+  | { type: "SUBMIT_ERROR"; payload: string }
+  | { type: "RESET" };
 
 export const initialState: WizardState = {
   stepIndex: 0,
@@ -21,7 +23,9 @@ export const initialState: WizardState = {
   sms: { message: "" },
   whatsapp: { message: "" },
   email: { subject: "", message: "" },
+  sending: false,
   submitted: false,
+  error: null,
 };
 
 function sortChannels(channels: Channel[]): Channel[] {
@@ -33,19 +37,19 @@ export function wizardReducer(
   action: WizardAction
 ): WizardState {
   switch (action.type) {
-    case "SET_TEMPLATE":{
-        const t = action.payload;
-        const tpl = TEMPLATES[t];
-        return {
-            ...state,
-            template: t,
-            sms: { message: state.sms.message || tpl.sms },
-            whatsapp: { message: state.whatsapp.message || tpl.whatsapp },
-            email: {
-                subject: state.email.subject || tpl.email.subject,
-                message: state.email.message || tpl.email.message,
-            },
-        };
+    case "SET_TEMPLATE": {
+      const t = action.payload;
+      const tpl = TEMPLATES[t];
+      return {
+        ...state,
+        template: t,
+        sms: { message: state.sms.message || tpl.sms },
+        whatsapp: { message: state.whatsapp.message || tpl.whatsapp },
+        email: {
+          subject: state.email.subject || tpl.email.subject,
+          message: state.email.message || tpl.email.message,
+        },
+      };
     }
 
     case "TOGGLE_CHANNEL": {
@@ -62,50 +66,34 @@ export function wizardReducer(
     }
 
     case "UPDATE_SMS":
-      return {
-        ...state,
-        sms: { message: action.payload },
-      };
+      return { ...state, sms: { message: action.payload } };
 
     case "UPDATE_WHATSAPP":
-      return {
-        ...state,
-        whatsapp: { message: action.payload },
-      };
+      return { ...state, whatsapp: { message: action.payload } };
 
     case "UPDATE_EMAIL_SUBJECT":
-      return {
-        ...state,
-        email: { ...state.email, subject: action.payload },
-      };
+      return { ...state, email: { ...state.email, subject: action.payload } };
 
     case "UPDATE_EMAIL_MESSAGE":
-      return {
-        ...state,
-        email: { ...state.email, message: action.payload },
-      };
+      return { ...state, email: { ...state.email, message: action.payload } };
 
     case "NEXT_STEP":
-      return {
-        ...state,
-        stepIndex: state.stepIndex + 1,
-      };
+      return { ...state, stepIndex: state.stepIndex + 1 };
 
     case "PREV_STEP":
-      return {
-        ...state,
-        stepIndex: state.stepIndex - 1,
-      };
+      return { ...state, stepIndex: state.stepIndex - 1 };
 
-    case "SUBMIT":
-      return {
-        ...state,
-        submitted: true,
-      };
-    
-    case "APPLY_TEMPLATE_DEFAULTS":{
-        return state;
-    }
+    case "SUBMIT_REQUEST":
+      return { ...state, sending: true, error: null };
+
+    case "SUBMIT_SUCCESS":
+      return { ...state, sending: false, submitted: true };
+
+    case "SUBMIT_ERROR":
+      return { ...state, sending: false, error: action.payload };
+
+    case "RESET":
+      return initialState;
 
     default:
       return state;

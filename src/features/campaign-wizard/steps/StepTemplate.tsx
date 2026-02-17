@@ -1,4 +1,4 @@
-import { FormControl, FormControlLabel, Radio, RadioGroup, Typography } from "@mui/material";
+import { FormControlLabel, Radio, RadioGroup, Typography } from "@mui/material";
 import type { TemplateId } from "../types";
 
 type Props = {
