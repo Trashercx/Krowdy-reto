@@ -1,0 +1,98 @@
+import type { WizardState, Channel, TemplateId } from "./types";
+import { CHANNEL_ORDER } from "./types";
+
+export type WizardAction =
+  | { type: "SET_TEMPLATE"; payload: TemplateId }
+  | { type: "TOGGLE_CHANNEL"; payload: Channel }
+  | { type: "UPDATE_SMS"; payload: string }
+  | { type: "UPDATE_WHATSAPP"; payload: string }
+  | { type: "UPDATE_EMAIL_SUBJECT"; payload: string }
+  | { type: "UPDATE_EMAIL_MESSAGE"; payload: string }
+  | { type: "NEXT_STEP" }
+  | { type: "PREV_STEP" }
+  | { type: "SUBMIT" };
+
+export const initialState: WizardState = {
+  stepIndex: 0,
+  template: null,
+  channels: [],
+  sms: { message: "" },
+  whatsapp: { message: "" },
+  email: { subject: "", message: "" },
+  submitted: false,
+};
+
+function sortChannels(channels: Channel[]): Channel[] {
+  return CHANNEL_ORDER.filter((c) => channels.includes(c));
+}
+
+export function wizardReducer(
+  state: WizardState,
+  action: WizardAction
+): WizardState {
+  switch (action.type) {
+    case "SET_TEMPLATE":
+      return {
+        ...state,
+        template: action.payload,
+      };
+
+    case "TOGGLE_CHANNEL": {
+      const exists = state.channels.includes(action.payload);
+
+      const updated = exists
+        ? state.channels.filter((c) => c !== action.payload)
+        : [...state.channels, action.payload];
+
+      return {
+        ...state,
+        channels: sortChannels(updated),
+      };
+    }
+
+    case "UPDATE_SMS":
+      return {
+        ...state,
+        sms: { message: action.payload },
+      };
+
+    case "UPDATE_WHATSAPP":
+      return {
+        ...state,
+        whatsapp: { message: action.payload },
+      };
+
+    case "UPDATE_EMAIL_SUBJECT":
+      return {
+        ...state,
+        email: { ...state.email, subject: action.payload },
+      };
+
+    case "UPDATE_EMAIL_MESSAGE":
+      return {
+        ...state,
+        email: { ...state.email, message: action.payload },
+      };
+
+    case "NEXT_STEP":
+      return {
+        ...state,
+        stepIndex: state.stepIndex + 1,
+      };
+
+    case "PREV_STEP":
+      return {
+        ...state,
+        stepIndex: state.stepIndex - 1,
+      };
+
+    case "SUBMIT":
+      return {
+        ...state,
+        submitted: true,
+      };
+
+    default:
+      return state;
+  }
+}
